@@ -11,12 +11,13 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://sujalpatil21.github.io",
-        "https://meal-mind-5n51.onrender.com",
-        "*"
+        "https://meal-mind-5n51.onrender.com"
     ],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # ---------------- FILE PATH FIX ----------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -69,24 +70,43 @@ async def generate_flux_image(prompt: str) -> dict:
 
     except Exception as e:
         return {"image": LOCAL_PLACEHOLDER, "error": str(e)}
+def normalize(word: str) -> str:
+    word = word.lower().strip()
+    if word.endswith("es"):
+        return word[:-2]
+    if word.endswith("s"):
+        return word[:-1]
+    return word
 
 # ===========================================================
 #   MAIN RECIPE SUGGESTION
 # ===========================================================
 @app.get("/suggest_meal")
 async def suggest_meal(ingredients: str):
-    user_ingredients = [i.strip().lower() for i in ingredients.split(",")]
+    # Normalize user ingredients (supports egg -> eggs)
+    user_ingredients = [normalize(i) for i in ingredients.split(",")]
     suggestions = []
 
     for recipe in RECIPES:
-        recipe_ing = [x.lower() for x in recipe["ingredients"]]
-        matched = [x for x in recipe_ing if x in user_ingredients]
-        missing = [x for x in recipe_ing if x not in user_ingredients]
+        recipe_ing_raw = recipe["ingredients"]          # Original ingredients
+        recipe_ing_norm = [normalize(x) for x in recipe_ing_raw]  # Normalized
 
+        # Identify matched & missing (smart singular/plural)
+        matched = [
+            orig for orig in recipe_ing_raw
+            if normalize(orig) in user_ingredients
+        ]
+
+        missing = [
+            orig for orig in recipe_ing_raw
+            if normalize(orig) not in user_ingredients
+        ]
+
+        # Only include recipes with at least one match
         if matched:
             suggestions.append({
                 "name": recipe["name"],
-                "ingredients": recipe["ingredients"],
+                "ingredients": recipe_ing_raw,
                 "matched_ingredients": matched,
                 "missing_ingredients": missing,
                 "steps": recipe.get("steps", []),
@@ -97,6 +117,7 @@ async def suggest_meal(ingredients: str):
             })
 
     return {"suggestions": suggestions}
+
 
 # ===========================================================
 #   IMAGE GENERATION ENDPOINT
