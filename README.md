@@ -5,9 +5,10 @@ It generates realistic food images using an AI image API, maintains a smart pant
 
 ---
 
-## 🎥 Demo Video
+## ▶️ Demo Video (Click To Open Video)
 
-https://github.com/yourusername/mindmeal/blob/main/Mealmind.mp4
+[![Project Demo](Project.png)](https://www.youtube.com/watch?v=sTBTgqAxueU)
+
 ---
 
 ## ⭐ Features
